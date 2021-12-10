@@ -16,8 +16,14 @@ const BookList = () => {
   if (error) return <p>Error loading books</p>;
 
   // const bookList = data.map(book => 0)
+  // const bookList = () => {
+  //   return data.books.map(book => {
+  //     return <li key={book.id} onClick={e => setSelected(book.id)}>{book.name}</li>
+  //   })
+  // };
+
   const bookList = data.books.map(book => {
-    return <li key={ book.id } onClick={ e => setSelected(book.id) }>{ book.name }</li>
+    return <li key={book.id} onClick={e => setSelected(book.id)}>{book.name}</li>
   });
 
   console.log(data);
@@ -28,7 +34,7 @@ const BookList = () => {
       <ul id="book-list">
         { bookList }
       </ul>
-      <BookDetails bookId={ selected } />
+      <BookDetails bookId={selected} />
     </div>
   )
 }

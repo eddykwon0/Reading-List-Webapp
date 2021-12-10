@@ -6,7 +6,7 @@ const Author = require('../models/author');
 const { applyMiddleware } = require('graphql-middleware');
 
 // In this file, we will describe our schemas
-// Schemas describes object types, relation between data types, how we can access the graph to interact 
+// Schemas describe object types, relation between data types, how we can access the graph to interact 
 // with that data - whether it be to query and retrieve data or to mutate/change the data
 
 const { 
@@ -18,22 +18,6 @@ const {
   GraphQLList,
   GraphQLNonNull
 } = graphql;
-
-// DUMMY DATA
-// const books = [
-//   { name: 'Name of the Wind', genre: 'Fantasy', id: '1', authorId: '1' },
-//   { name: 'The Final Empire', genre: 'Fantasy', id: '2', authorId: '2' },
-//   { name: 'The Long Earth', genre: 'Sci-Fi', id: '3', authorId: '3' },
-//   { name: 'The Hero of Ages', genre: 'Fantasy', id: '4', authorId: '2' },
-//   { name: 'The Colour of Magic', genre: 'Fantasy', id: '5', authorId: '3' },
-//   { name: 'The Light Fantastic', genre: 'Fantasy', id: '6', authorId: '3' },
-// ];
-
-// const authors = [
-//   { name: 'Patrick Rothfuss', age: 44, id: '1' },
-//   { name: 'Brandon Sanderson', age: 42, id: '2' },
-//   { name: 'Terry Pratchett', age: 66, id: '3' },
-// ];
 
 
 const BookType = new GraphQLObjectType({
@@ -183,33 +167,53 @@ const Mutation = new GraphQLObjectType({
 //   }
 // }
 
-const loggingMiddleware = async (resolve, root, args, context, info) => {  
-  console.log(`Input arguments: ${JSON.stringify(args)}`)  
-  const result = await resolve(root, args, context, info)  
-  console.log(`Result: ${JSON.stringify(result)}`)  
-  return result
-}
+// const loggingMiddleware = async (resolve, root, args, context, info) => {  
+//   console.log(`Input arguments: ${JSON.stringify(args)}`)  
+//   const result = await resolve(root, args, context, info)  
+//   console.log(`Result: ${JSON.stringify(result)}`)  
+//   return result
+// }
 
 
 const timerMiddleware = async (resolve, root, args, context, info) => {
-  const startTime = Date.now();
-  // const name = root.name
-  // console.log(`Starting timer for ${root}`); 
-  // const path = responsePathAsArray(info.path);
-  console.log(`THIS IS INFO.PATH ${JSON.stringify(info)}`);
-  const result = await resolve(root, args, context, info);
-  // console.log(`Finished for ${root}! this query took ${Date.now() - startTime} ms`);
+  // console.log('timer in ');
+  // return;
+  const startTime = process.hrtime();
+  const result = await resolve(root, args, context, info); // execute resolver
+  const elapsedTime = process.hrtime(startTime)
+  const elapsedTimeInMs = (elapsedTime[0] * 1000) + (elapsedTime[1] / 1e6); // convert to ms
+  
+  const parentType = info.parentType;
+  const fieldName = info.fieldName;
+  
+  if (context.cache[parentType] === undefined) {
+    console.log('STARTING NEW CACHE\n');
+    // write to file or send to GUI when new query start
+    context.cache = {};
+    context.cache[parentType] = [[fieldName, elapsedTimeInMs]];
+  } else {
+    console.log('PUSHING TO EXISTING\n');
+    context.cache[parentType].push([fieldName, elapsedTimeInMs]);
+  }
+
+  console.log(`CONTEXT: ${JSON.stringify(context)} \n\n`);
+  // console.log(`CONTEXT: ${context}`);
+
+  // console.log(`Finished for ${parentType}! this query took ${elapsedTimeInMs} ms`);
   return result;
 }
+
 // I wish we could tell when its our code thats breakjing it, vs. when mongo is just taking a minute
 const schema = new GraphQLSchema({
   query: RootQuery,
   mutation: Mutation
 });
 
-const schemaWithMiddleware = applyMiddleware(schema, timerMiddleware)
+// const schemaWithMiddleware = applyMiddleware(schema, timerMiddleware)
 
-module.exports = schemaWithMiddleware;
+// module.exports = schemaWithMiddleware;
+
+module.exports = schema;
 
 // module.exports = new GraphQLSchema({
 //   // passing options to GraphQLSchema - which queries and mutations users can make from the front end
